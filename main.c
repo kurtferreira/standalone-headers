@@ -19,19 +19,19 @@ typedef enum {
 } MyPunctuation;
 
 static Punctuation punctuation[] = {
-    "<<", P_ShiftLeft,
-    ">>", P_ShiftRight,
-    "(", P_OpenBrace,
-    ")", P_CloseBrace,
-    "[", P_OpenBracket,
-    "]", P_CloseBracket,
-    "+", P_Plus,
-    "-", P_Minus,
-    "*", P_Multiply,
-    "/", P_Divide
+    "<<", P_ShiftLeft, 0,
+    ">>", P_ShiftRight, 0,
+    "(", P_OpenBrace, 0,
+    ")", P_CloseBrace, 0,
+    "[", P_OpenBracket, 0,
+    "]", P_CloseBracket, 0,
+    "+", P_Plus, 0,
+    "-", P_Minus, 0,
+    "*", P_Multiply, 0,
+    "/", P_Divide, 0
 };
 
-static const char *script = "";
+static const char *script = "(helloworld + dingles)";
 
 void TestPunctuation() 
 {
@@ -45,7 +45,12 @@ void TestPunctuation()
     }
 
     // Parse a piece of string given the punctuation definition
-    Parser *parser = Parser_Init(script, plist);
+    Parser *parser = Parser_Init(script, plist, P_ACCEPT_DOUBLEQUOTES|P_ACCEPT_SINGLEQUOTES);
+
+    int foundtoken = Parser_Parse(parser);
+    while (foundtoken != -1) {
+        printf("Token: [%s] (%i)\n", Parser_GetToken(parser), Parser_GetTokenId(parser));
+    }
 
 
     Punctuation_Destroy(plist);
