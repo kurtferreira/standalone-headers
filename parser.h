@@ -24,6 +24,16 @@
 //  This is not unicode-compliant just yet. Feel free to submit a PR if you
 //  need it.
 
+/*
+================================================================================
+
+Changelog
+
+v0.1.1 - Initial public release.
+
+================================================================================
+*/
+
 #ifndef _KPARSER_H_
 #define _KPARSER_H_
 
@@ -208,12 +218,17 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
         
         // Parse the entire buffer
         for (int64_t i = 0; i < p->buffer_size; i++) {
-            if (p->buffer[i] == '\r' && i < p->buffer_size) i++; // skip \r
+            while (p->buffer[i] == ' ' && i < p->buffer_size) {
+                i++; // skip starting whitespace
+            }
+
+            if (p->buffer[i] == '\r' && i < p->buffer_size) {
+                i++; // skip \r
+            }
+
             if (p->buffer[i] == '\n') {
                 current_line++;
             }
-
-            while (p->buffer[i] == ' ' && i < p->buffer_size) i++; // skip starting whitespace
 
             // are we starting any punctuations
             int is_punc = Parser_IsPunctuation(p, i);
@@ -247,47 +262,53 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                     }
                 } else { 
                     while (i < p->buffer_size) {
-                        
                         if (p->buffer[i] == '\r' && i < p->buffer_size) i++; // skip \r
                         if (p->buffer[i] == '\n') current_line++;
 
                         is_punc = Parser_IsPunctuation(p, i);
-                        // if we hit punctuation or whitespace, halt at this token
-                        if (
-                            is_punc > -1 || 
-                            p->buffer[i] == '\n' || 
-                            p->buffer[i] == '\t' ||
-                            p->buffer[i] == ' '
-                        ) {
-                            // break and possibly capture the punctuation
+                        
+                        // delimited by punctuation, reverse so we can track next round
+                        if (is_punc > -1) {
+                            is_punc = -1;
+                            i -= p->punctuation->items[is_punc].len + 1; 
                             break;
                         }
+
+                        // we've reached a whitespace break
+                        if (p->buffer[i] == '\n' || p->buffer[i] == '\t' || p->buffer[i] == ' ') break;
                     
                         end_offset++;
                         i++;
                     }
                 }
-
+                
                 // normal token
                 if (is_punc < 0) {
                     token.id = -1;
                     token.line = start_line;
                     token.offset = start_offset;
-                    token.len = (end_offset - start_offset);
+                    token.len = (end_offset - start_offset) - 1;
                     token.token = (char*)malloc(token.len);
                     
-                    strncpy(token.token, buffer + start_offset, token.len-1);
+                    strncpy(token.token, buffer + start_offset, token.len);
                     token.token[token.len] = '\0';
                 }
             } 
 
-            if (is_punc > 0) {
+            if (is_punc >= 0) {
                 token.id = p->punctuation->items[is_punc].id;
                 token.len = p->punctuation->items[is_punc].len;
                 token.offset = i;
                 token.line = current_line;
                 token.token = (char*) malloc(token.len);
                 strcpy(token.token, p->punctuation->items[is_punc].p);
+
+                if (token.len > 1) {
+                    // increment by the full punctuation size
+                    i += token.len; // -1 because we've already got the first character
+                }
+            } else {
+                if (token.len == 0) continue; // empty tokens
             }
 
             // Add the token (expand array size if necessary)

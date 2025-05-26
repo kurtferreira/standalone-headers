@@ -31,7 +31,7 @@ static Punctuation punctuation[] = {
     "/", P_Divide, 0
 };
 
-static const char *script = "( hello\t world + dingles)\n"
+static const char *script = "( hello\t a>>b world + dingles)\n"
                             "[and now]";
 
 void TestPunctuation() 
@@ -49,7 +49,6 @@ void TestPunctuation()
     Parser *parser = Parser_Init(script, plist, P_ACCEPT_DOUBLEQUOTES|P_ACCEPT_SINGLEQUOTES);
 
     Token token = Parser_GetToken(parser);
-    printf("Showing loop:\n");
     while (token.id != -2) {
         printf("Token (id:%i): [%s]\n", token.id, token.token);
         token = Parser_GetToken(parser);
