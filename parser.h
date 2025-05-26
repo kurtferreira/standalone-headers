@@ -105,11 +105,10 @@ void             Punctuation_Destroy(PunctuationList *list);
 Parser          *Parser_Init(const char *buffer, const PunctuationList *punctuation, int options);
 void             Parser_Destroy(Parser *parser);
 
-int64_t          Parser_Parse(Parser *parser);      // move the cursor to the next token, returns line position (-1 if EOF)
+
+const Token      Parser_GetToken(Parser *parser);   // return the string representation of the current token
 void             Parser_UngetToken(Parser *parser); // reset to the previous token
-const char      *Parser_GetToken(Parser *parser);   // return the string representation of the current token
-int              Parser_GetTokenId(Parser *parser); // return -1 if a token, 0+ if its a punctuation
-int              Parser_PeekToken(Parser *parser);  // peek the next token, but don't move the cursor
+const Token      Parser_PeekToken(Parser *parser);  // peek the next token, but don't move the cursor (-2 if EOF)
 int64_t          Parser_GetLine(Parser *parser);    // get the current line in the script
 int              Parser_IsPunctuation(Parser *parser, int64_t start_offset);
 #ifdef __cplusplus
@@ -219,8 +218,6 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
             // are we starting any punctuations
             int is_punc = Parser_IsPunctuation(p, i);
             if (is_punc == -1) {
-                printf("Not punctuation, reading token...\n");
-
                 // gobble up until we hit whitespace or another punctuation
                 int64_t start_offset = i;
                 int64_t end_offset = start_offset + 1;
@@ -250,6 +247,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                     }
                 } else { 
                     while (i < p->buffer_size) {
+                        
                         if (p->buffer[i] == '\r' && i < p->buffer_size) i++; // skip \r
                         if (p->buffer[i] == '\n') current_line++;
 
@@ -272,17 +270,18 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
 
                 // normal token
                 if (is_punc < 0) {
-                        token.id = -1;
-                        token.line = start_line;
-                        token.len = end_offset - start_offset;
-                        token.offset = start_offset;
-                        token.token = (char*)malloc(token.len);
-                        strncpy(token.token, buffer + start_offset, token.len);
-                        token.token[token.len] = '\0';
+                    token.id = -1;
+                    token.line = start_line;
+                    token.offset = start_offset;
+                    token.len = (end_offset - start_offset);
+                    token.token = (char*)malloc(token.len);
+                    
+                    strncpy(token.token, buffer + start_offset, token.len-1);
+                    token.token[token.len] = '\0';
                 }
             } 
 
-            if (is_punc) {
+            if (is_punc > 0) {
                 token.id = p->punctuation->items[is_punc].id;
                 token.len = p->punctuation->items[is_punc].len;
                 token.offset = i;
@@ -297,7 +296,6 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                 p->tokens.items = (Token*) _KREALLOC(p->tokens.items, p->tokens.capacity);
             }
  
-            printf("Found token, adding (id: %i): %s\n", token.id,token.token);
             p->tokens.items[p->tokens.count++] = token;
         }
 
@@ -312,6 +310,9 @@ void Parser_Destroy(Parser *parser)
     _KASSERT(parser);
     
     if (parser->tokens.items) {
+        for (int i = 0; i < parser->tokens.count; i++) {
+            _KFREE(parser->tokens.items[i].token);
+        }
         _KFREE(parser->tokens.items);
     }
 
@@ -319,29 +320,24 @@ void Parser_Destroy(Parser *parser)
     parser = nullptr;
 }
 
-int64_t Parser_Parse(Parser *parser)
+
+const Token Parser_GetToken(Parser *parser)
 {
     _KASSERT(parser);
+
     if (parser->current_token < parser->tokens.count) {
-        parser->current_token++;
-        return parser->tokens.items[parser->current_token].line;
+        return parser->tokens.items[parser->current_token++];
     }
 
-    return -1; // reached EOF
-}
+    const Token eof_token = {
+        .id = -2,
+        .len = 3,
+        .line = parser->tokens.items[parser->current_token-1].line+1,
+        .offset = parser->tokens.items[parser->current_token-1].offset + parser->tokens.items[parser->current_token-1].len,
+        .token = nullptr
+    };
 
-int Parser_GetTokenId(Parser *parser)
-{
-    _KASSERT(parser);
-
-    return parser->tokens.items[parser->current_token].id;
-}
-
-const char *Parser_GetToken(Parser *parser)
-{
-    _KASSERT(parser);
-
-    return (const char *)parser->tokens.items[parser->current_token].token;
+    return eof_token;
 }
 
 void Parser_UngetToken(Parser *parser)
@@ -352,15 +348,23 @@ void Parser_UngetToken(Parser *parser)
     }
 }
 
-int Parser_PeekToken(Parser *parser)
+const Token Parser_PeekToken(Parser *parser)
 {
     _KASSERT(parser);
 
-    if (parser->current_token <= parser->tokens.count) {
-        return parser->tokens.items[parser->current_token + 1].id;
+    if (parser->current_token < parser->tokens.count) {
+        return parser->tokens.items[parser->current_token + 1];
     }
 
-    return -2;
+    const Token eof_token = {
+        .id = -2,
+        .len = 3,
+        .line = parser->tokens.items[parser->current_token-1].line+1,
+        .offset = parser->tokens.items[parser->current_token-1].offset + parser->tokens.items[parser->current_token-1].len,
+        .token = nullptr
+    };
+
+    return eof_token;
 }
 
 int64_t Parser_GetLine(Parser *parser)
