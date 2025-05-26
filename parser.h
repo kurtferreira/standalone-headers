@@ -55,8 +55,8 @@ extern "C" {
  
 typedef struct {
     const char *p;
-    int len; 
     int id;
+    int len; 
 } Punctuation;
 
 typedef struct {
@@ -218,7 +218,9 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
 
             // are we starting any punctuations
             int is_punc = Parser_IsPunctuation(p, i);
-            if (is_punc != -1) {
+            if (is_punc == -1) {
+                printf("Not punctuation, reading token...\n");
+
                 // gobble up until we hit whitespace or another punctuation
                 int64_t start_offset = i;
                 int64_t end_offset = start_offset + 1;
@@ -295,7 +297,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                 p->tokens.items = (Token*) _KREALLOC(p->tokens.items, p->tokens.capacity);
             }
  
-            printf("Found punctuation, adding: %s\n", token.token);
+            printf("Found token, adding (id: %i): %s\n", token.id,token.token);
             p->tokens.items[p->tokens.count++] = token;
         }
 
