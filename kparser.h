@@ -1,5 +1,5 @@
 /*
- * This file is part of the standalone Parser header file
+ * This file is part of the single-file header parser library
  * 
  * Copyright (C) 2025 Kurt Ferreira
  *
@@ -139,8 +139,9 @@ int              Parser_IsPunctuation(Parser *parser, int64_t start_offset);
 };
 #endif // __cplusplus
 
-#ifdef _KPARSER_IMPLEMENTATION
+#endif // _KPARSER_H
 
+#ifdef _KPARSER_IMPLEMENTATION
 // return -1 if not, *index* of the punctuation if it is
 int Parser_IsPunctuation(Parser *parser, int64_t start_offset) 
 {
@@ -410,5 +411,3 @@ int64_t Parser_GetLine(Parser *parser)
 }
 
 #endif // _KPARSER_IMPLEMENTATION
-
-#endif // _KPARSER_H
