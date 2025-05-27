@@ -30,6 +30,13 @@ Usage:
     #define_KPARSER_IMPLEMENTATION // do in only one file
     #include "parser.h"
 
+Allocations:
+    Allocations happen when:
+        - Punctuation list (sizeof(Punctuation) + initial 
+          16x sizeof(Punctuation))
+        - initializing the Parser (sizeof Parser)
+        - each token (sizeof(Token) + string length)
+
 If you want to provide your own assert/malloc/free define before including:
     _KASSERT
     _KMALLOC 
@@ -295,7 +302,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                     token.line = start_line;
                     token.offset = start_offset;
                     token.len = (end_offset - start_offset) - 1;
-                    token.token = (char*)malloc(token.len);
+                    token.token = (char*)_KMALLOC(token.len);
                     
                     strncpy(token.token, buffer + start_offset, token.len);
                     token.token[token.len] = '\0';
@@ -307,7 +314,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                 token.len = p->punctuation->items[is_punc].len;
                 token.offset = i;
                 token.line = current_line;
-                token.token = (char*) malloc(token.len);
+                token.token = (char*) _KMALLOC(token.len);
                 strcpy(token.token, p->punctuation->items[is_punc].p);
 
                 if (token.len > 1) {
