@@ -1,5 +1,5 @@
 /*
- * This file is part of the single-file header lexer library
+ * This file is part of the single-file (sort of) header lexer library
  * 
  * Copyright (C) 2025 Kurt Ferreira
  *
@@ -33,6 +33,63 @@ Objectives:
     Lexer_DefineIgnore(p_multiline_comment_open, p_multiline_comment_close);
 - we need to define atomics
     Lexer_DefineAtomic(?)
+    Lexer_DefineVariable(?)
+    Lexer_DefineConstant(?)
+    Lexer_DefineKeyword(?)
+    Lexer_DefineOperation(?)
+    Lexer_DefineScopeStart(?)
+    Lexer_DefineScopeEnd(?)
 - we need to define compile-time vs runtime stuff (@TODO)
-
 */
+
+#ifndef _KLEXER_H_
+#define _KLEXER_H_
+
+#include <stdint.h>
+#include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+#define LEXER_UNKNOWN           (1<<0) // Simply, unknown
+#define LEXER_DIGIT             (1<<1) // A number based representation
+#define LEXER_ALPHANUMERIC      (1<<2) // An alphanumerical representation
+
+typedef void (*Tracer)(const char *msg, const char *file, const char *scope, intmax_t line, intmax_t offset);
+typedef struct {
+    Tracer tracer;
+} Lexer;
+
+Lexer   *Lexer_Init(const char *buffer);
+void     Lexer_Destroy(Lexer *lexer);
+void     Lexer_SetTracer(Lexer *lexer, Tracer tracer);
+
+#ifdef __cplusplus
+};
+#endif // __cplusplus
+
+
+#endif // _KLEXER_H_
+
+#ifdef _KLEXER_IMPLEMENTATION
+
+Lexer *Lexer_Init(const char *buffer)
+{
+    return nullptr;
+}
+
+void Lexer_Destroy(Lexer *lexer)
+{
+    if (lexer) {
+        _KFREE(lexer);
+    }
+}
+
+void Lexer_SetTracer(Lexer *lexer, Tracer tracer)
+{
+    _KASSERT(lexer);
+    lexer->tracer = tracer;
+}
+
+#endif // _KLEXER_IMPLEMENTATION
