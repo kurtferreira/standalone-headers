@@ -19,8 +19,9 @@
 
 /*
 Description:
-    This is a thread-safe (provided you don't access the buffer being processed) parser.
-    It includes fundamentals to parse a piece of text with established punctuation etc.
+    This is a thread-safe (provided you don't access the buffer being 
+    processed) parser. It includes fundamentals to parse a piece of text with 
+    established punctuation etc.
 NOTE:
     This is not unicode-compliant just yet. Feel free to submit a PR if you
     need it.
