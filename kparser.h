@@ -17,14 +17,23 @@
  * along with this library. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Description:
-// This is a thread-safe (provided you don't access the buffer being processed) parser.
-// It includes fundamentals to parse a piece of text with established punctuation etc.
-// NOTE:
-//  This is not unicode-compliant just yet. Feel free to submit a PR if you
-//  need it.
-
 /*
+Description:
+    This is a thread-safe (provided you don't access the buffer being processed) parser.
+    It includes fundamentals to parse a piece of text with established punctuation etc.
+NOTE:
+    This is not unicode-compliant just yet. Feel free to submit a PR if you
+    need it.
+
+Usage:
+    #define_KPARSER_IMPLEMENTATION // do in only one file
+    #include "parser.h"
+
+If you want to provide your own assert/malloc/free define before including:
+    _KASSERT
+    _KMALLOC 
+        -> then define _KMALLOC, _KREALLOC and _KFREE for each mem op
+
 ================================================================================
 
 Changelog
@@ -39,10 +48,6 @@ v0.1.1 - Initial public release.
 
 #include <stdint.h>
 #include <string.h>
-
-#ifndef _KPARSER_IMPLEMENTATION 
-#define _KPARSER_IMPLEMENTATION
-#endif
 
 #ifndef nullptr 
     #define nullptr (void*)NULL
@@ -65,28 +70,28 @@ extern "C" {
  
 typedef struct {
     const char *p;
-    int id;
-    int len; 
+    int         id;
+    int         len; 
 } Punctuation;
 
 typedef struct {
     Punctuation *items;
-    int64_t capacity;
-    int64_t count;
+    int64_t      capacity;
+    int64_t      count;
 } PunctuationList;
 
 typedef struct {
-    int id;
-    char *token;
-    int64_t len;
-    int64_t line;   // line in buffer
-    int64_t offset; // in buffer
+    int      id;
+    char    *token;
+    int64_t  len;
+    int64_t  line;   // line in buffer
+    int64_t  offset; // in buffer
 } Token;
 
 typedef struct {
-    Token * items;
-    int64_t capacity;
-    int64_t count;
+    Token   *items;
+    int64_t  capacity;
+    int64_t  count;
 } TokenList;
 
 typedef struct {
@@ -98,6 +103,7 @@ typedef struct {
     int64_t                  current_token;
 } Parser;
 
+// Parser options
 #define P_ACCEPT_SINGLEQUOTES 0x01  // parse single quote slices as a whole token
 #define P_ACCEPT_DOUBLEQUOTES 0x02  // parse double quoted slices as a whole token
 
