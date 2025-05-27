@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #define _KPARSER_IMPLEMENTATION
-#include "parser.h"
+#include "kparser.h"
 
 // Make sure to include multibyte punctuation before single-byte ones
 // e.g. '<<' before '<'

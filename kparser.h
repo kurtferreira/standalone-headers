@@ -84,31 +84,31 @@ typedef struct {
 
 typedef struct {
     Punctuation *items;
-    int64_t      capacity;
-    int64_t      count;
+    intmax_t      capacity;
+    intmax_t      count;
 } PunctuationList;
 
 typedef struct {
     int      id;
     char    *token;
-    int64_t  len;
-    int64_t  line;   // line in buffer
-    int64_t  offset; // in buffer
+    intmax_t  len;
+    intmax_t  line;   // line in buffer
+    intmax_t  offset; // in buffer
 } Token;
 
 typedef struct {
     Token   *items;
-    int64_t  capacity;
-    int64_t  count;
+    intmax_t  capacity;
+    intmax_t  count;
 } TokenList;
 
 typedef struct {
     int                      options;
     const char              *buffer;
     const PunctuationList   *punctuation;
-    int64_t                  buffer_size;
+    intmax_t                  buffer_size;
     TokenList                tokens;
-    int64_t                  current_token;
+    intmax_t                  current_token;
 } Parser;
 
 // Parser options
@@ -133,8 +133,8 @@ void             Parser_Destroy(Parser *parser);
 const Token      Parser_GetToken(Parser *parser);   // return the string representation of the current token
 void             Parser_UngetToken(Parser *parser); // reset to the previous token
 const Token      Parser_PeekToken(Parser *parser);  // peek the next token, but don't move the cursor (-2 if EOF)
-int64_t          Parser_GetLine(Parser *parser);    // get the current line in the script
-int              Parser_IsPunctuation(Parser *parser, int64_t start_offset);
+intmax_t          Parser_GetLine(Parser *parser);    // get the current line in the script
+int              Parser_IsPunctuation(Parser *parser, intmax_t start_offset);
 #ifdef __cplusplus
 };
 #endif // __cplusplus
@@ -143,9 +143,9 @@ int              Parser_IsPunctuation(Parser *parser, int64_t start_offset);
 
 #ifdef _KPARSER_IMPLEMENTATION
 // return -1 if not, *index* of the punctuation if it is
-int Parser_IsPunctuation(Parser *parser, int64_t start_offset) 
+int Parser_IsPunctuation(Parser *parser, intmax_t start_offset) 
 {
-    int64_t offset = start_offset;
+    intmax_t offset = start_offset;
     int punctuation = -1;
     int found_punc = 0;
     int p_index = 0;
@@ -228,11 +228,11 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
         p->tokens.count = 0;
         p->tokens.items = (Token*)_KMALLOC(sizeof(Token) * p->tokens.capacity);
         
-        int64_t current_line = 0, begin_token = 0, end_token = 0;
+        intmax_t current_line = 0, begin_token = 0, end_token = 0;
         Token token;
         
         // Parse the entire buffer
-        for (int64_t i = 0; i < p->buffer_size; i++) {
+        for (intmax_t i = 0; i < p->buffer_size; i++) {
             while (p->buffer[i] == ' ' && i < p->buffer_size) {
                 i++; // skip starting whitespace
             }
@@ -249,9 +249,9 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
             int is_punc = Parser_IsPunctuation(p, i);
             if (is_punc == -1) {
                 // gobble up until we hit whitespace or another punctuation
-                int64_t start_offset = i;
-                int64_t end_offset = start_offset + 1;
-                int64_t start_line = current_line;
+                intmax_t start_offset = i;
+                intmax_t end_offset = start_offset + 1;
+                intmax_t start_line = current_line;
 
                 if (p->options & P_ACCEPT_DOUBLEQUOTES && p->buffer[i] == '"') {
                     while (i < p->buffer_size) {
@@ -403,7 +403,7 @@ const Token Parser_PeekToken(Parser *parser)
     return eof_token;
 }
 
-int64_t Parser_GetLine(Parser *parser)
+intmax_t Parser_GetLine(Parser *parser)
 {
     _KASSERT(parser);
     
