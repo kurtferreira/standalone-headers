@@ -84,36 +84,38 @@ typedef struct {
 
 typedef struct {
     Punctuation *items;
-    intmax_t      capacity;
-    intmax_t      count;
+    intmax_t     capacity;
+    intmax_t     count;
 } PunctuationList;
 
 typedef struct {
-    int      id;
-    char    *token;
-    intmax_t  len;
-    intmax_t  line;   // line in buffer
-    intmax_t  offset; // in buffer
+    int          id;
+    char        *token;
+    intmax_t     len;
+    intmax_t     line;   // line in buffer
+    intmax_t     offset; // in buffer
 } Token;
 
 typedef struct {
-    Token   *items;
-    intmax_t  capacity;
-    intmax_t  count;
+    Token       *items;
+    intmax_t     capacity;
+    intmax_t     count;
 } TokenList;
 
 typedef struct {
     int                      options;
     const char              *buffer;
     const PunctuationList   *punctuation;
-    intmax_t                  buffer_size;
+    intmax_t                 buffer_size;
     TokenList                tokens;
-    intmax_t                  current_token;
+    intmax_t                 current_token;
 } Parser;
 
 // Parser options
-#define P_ACCEPT_SINGLEQUOTES 0x01  // parse single quote slices as a whole token
-#define P_ACCEPT_DOUBLEQUOTES 0x02  // parse double quoted slices as a whole token
+// parse single quote slices as a whole token
+#define P_ACCEPT_SINGLEQUOTES 0x01  
+// parse double quoted slices as a whole token
+#define P_ACCEPT_DOUBLEQUOTES 0x02  
 
 //
 // Punctuation/Delimiter management
@@ -130,10 +132,10 @@ Parser          *Parser_Init(const char *buffer, const PunctuationList *punctuat
 void             Parser_Destroy(Parser *parser);
 
 
-const Token      Parser_GetToken(Parser *parser);   // return the string representation of the current token
+const Token      Parser_GetToken(Parser *parser);   // return the current token and progress the cursor
 void             Parser_UngetToken(Parser *parser); // reset to the previous token
 const Token      Parser_PeekToken(Parser *parser);  // peek the next token, but don't move the cursor (-2 if EOF)
-intmax_t          Parser_GetLine(Parser *parser);    // get the current line in the script
+intmax_t         Parser_GetLine(Parser *parser);   // get the current line in the script
 int              Parser_IsPunctuation(Parser *parser, intmax_t start_offset);
 #ifdef __cplusplus
 };
