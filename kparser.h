@@ -21,7 +21,7 @@
 Description:
     This is a thread-safe (provided you don't access the buffer being 
     processed) parser. It includes fundamentals to parse a piece of text with 
-    established punctuation etc.
+    established punc_t etc.
 NOTE:
     This is not unicode-compliant just yet. Feel free to submit a PR if you
     need it.
@@ -32,10 +32,10 @@ Usage:
 
 Allocations:
     Allocations happen when:
-        - Punctuation list (sizeof(Punctuation) + initial 
-          16x sizeof(Punctuation))
-        - initializing the Parser (sizeof Parser)
-        - each token (sizeof(Token) + string length)
+        - punc_t list (sizeof(punc_t) + initial 
+          16x sizeof(punc_t))
+        - initializing the parser_t (sizeof parser_t)
+        - each token (sizeof(token_t) + string length)
 
 If you want to provide your own assert/malloc/free define before including:
     _KASSERT
@@ -80,13 +80,13 @@ typedef struct {
     const char *p;
     int         id;
     int         len; 
-} Punctuation;
+} punc_t;
 
 typedef struct {
-    Punctuation *items;
+    punc_t      *items;
     intmax_t     capacity;
     intmax_t     count;
-} PunctuationList;
+} punc_list_t;
 
 typedef struct {
     int          id;
@@ -94,49 +94,49 @@ typedef struct {
     intmax_t     len;
     intmax_t     line;   // line in buffer
     intmax_t     offset; // in buffer
-} Token;
+} token_t;
 
 typedef struct {
-    Token       *items;
+    token_t     *items;
     intmax_t     capacity;
     intmax_t     count;
-} TokenList;
+} token_list_t;
 
 typedef struct {
-    int                      options;
-    const char              *buffer;
-    const PunctuationList   *punctuation;
-    intmax_t                 buffer_size;
-    TokenList                tokens;
-    intmax_t                 current_token;
-} Parser;
+    int                  options;
+    const char          *buffer;
+    const punc_list_t   *punc_t;
+    intmax_t             buffer_size;
+    token_list_t         tokens;
+    intmax_t             current_token;
+} parser_t;
 
-// Parser options
+// parser_t options
 // parse single quote slices as a whole token
 #define P_ACCEPT_SINGLEQUOTES 0x01  
 // parse double quoted slices as a whole token
 #define P_ACCEPT_DOUBLEQUOTES 0x02  
 
 //
-// Punctuation/Delimiter management
+// punc_t/Delimiter management
 //
-PunctuationList *Punctuation_Init();
-// will calculate the length of the punctuation as well
-void             Punctuation_Add(PunctuationList *list, const char *token, int id);
-void             Punctuation_Destroy(PunctuationList *list);
+punc_list_t        *punc_init();
+// will calculate the length of the punc_t as well
+void                punc_add(punc_list_t *list, const char *token, int id);
+void                punc_destroy(punc_list_t *list);
 
 //
 // Parsing 
 //
-Parser          *Parser_Init(const char *buffer, const PunctuationList *punctuation, int options);
-void             Parser_Destroy(Parser *parser);
+parser_t           *parser_init(const char *buffer, const punc_list_t *punc_t, int options);
+void                parser_destroy(parser_t *parser);
 
 
-const Token      Parser_GetToken(Parser *parser);   // return the current token and progress the cursor
-void             Parser_UngetToken(Parser *parser); // reset to the previous token
-const Token      Parser_PeekToken(Parser *parser);  // peek the next token, but don't move the cursor (-2 if EOF)
-intmax_t         Parser_GetLine(Parser *parser);   // get the current line in the script
-int              Parser_IsPunctuation(Parser *parser, intmax_t start_offset);
+const token_t       parser_get_token(parser_t *parser);   // return the current token and progress the cursor
+void                parser_unget_token(parser_t *parser); // reset to the previous token
+const token_t       parser_peek_token(parser_t *parser);  // peek the next token, but don't move the cursor (-2 if EOF)
+intmax_t            parser_get_line(parser_t *parser);   // get the current line in the script
+int                 parser_is_punctuation(parser_t *parser, intmax_t start_offset);
 #ifdef __cplusplus
 };
 #endif // __cplusplus
@@ -144,21 +144,21 @@ int              Parser_IsPunctuation(Parser *parser, intmax_t start_offset);
 #endif // _KPARSER_H
 
 #ifdef _KPARSER_IMPLEMENTATION
-// return -1 if not, *index* of the punctuation if it is
-int Parser_IsPunctuation(Parser *parser, intmax_t start_offset) 
+// return -1 if not, *index* of the punc_t if it is
+int parser_is_punctuation(parser_t *parser, intmax_t start_offset) 
 {
     intmax_t offset = start_offset;
-    int punctuation = -1;
+    int punc_t = -1;
     int found_punc = 0;
     int p_index = 0;
 
-    for (int k = 0; k < parser->punctuation->count; k++) {
+    for (int k = 0; k < parser->punc_t->count; k++) {
         // first char match
-        if (parser->buffer[offset] == parser->punctuation->items[k].p[p_index]) {
+        if (parser->buffer[offset] == parser->punc_t->items[k].p[p_index]) {
             found_punc = 1;
             // match remaining chars
-            while (++offset < parser->buffer_size && ++p_index < parser->punctuation->items[k].len) {
-                if (parser->buffer[offset] != parser->punctuation->items[k].p[p_index]) {
+            while (++offset < parser->buffer_size && ++p_index < parser->punc_t->items[k].len) {
+                if (parser->buffer[offset] != parser->punc_t->items[k].p[p_index]) {
                     found_punc = 0;
                     offset = start_offset; // reverse
                     p_index = 0;
@@ -167,45 +167,45 @@ int Parser_IsPunctuation(Parser *parser, intmax_t start_offset)
             }
 
             if (found_punc) {
-                punctuation = k;
+                punc_t = k;
                 break;
             }
         }
     } 
     
-    return punctuation;
+    return punc_t;
 }
 
-PunctuationList *Punctuation_Init()
+punc_list_t *punc_init()
 {
-    PunctuationList * list = (PunctuationList*)_KMALLOC(sizeof(PunctuationList));
+    punc_list_t * list = (punc_list_t*)_KMALLOC(sizeof(punc_list_t));
     if (list) {
         list->count = 0;
         list->capacity = 16;
-        list->items = (Punctuation*)_KMALLOC(sizeof(Punctuation) * list->capacity);
+        list->items = (punc_t*)_KMALLOC(sizeof(punc_t) * list->capacity);
         return list;
     }
 
     return nullptr;
 }
 
-void Punctuation_Add(PunctuationList *list, const char *token, int id) 
+void punc_add(punc_list_t *list, const char *token, int id) 
 {
     _KASSERT(list != nullptr);
 
     if (list->count >= list->capacity) {
         list->capacity *= 2;
-        list->items = (Punctuation*) _KREALLOC(list->items, sizeof(Punctuation) * list->capacity);
+        list->items = (punc_t*) _KREALLOC(list->items, sizeof(punc_t) * list->capacity);
     }
 
-    list->items[list->count++] = (Punctuation) {
+    list->items[list->count++] = (punc_t) {
         .id = id,
         .p = token,
         .len = strlen(token)
     } ;
 }
 
-void Punctuation_Destroy(PunctuationList *list)
+void punc_destroy(punc_list_t *list)
 {
     if (list) {
         if (list->items) {
@@ -216,22 +216,22 @@ void Punctuation_Destroy(PunctuationList *list)
     }
 }
 
-Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int options) 
+parser_t *parser_init(const char *buffer, const punc_list_t *punc_t, int options) 
 {
-    _KASSERT(punctuation);
+    _KASSERT(punc_t);
 
-    Parser *p = (Parser*) _KMALLOC(sizeof(Parser));
+    parser_t *p = (parser_t*) _KMALLOC(sizeof(parser_t));
     if (p) {
         p->options = options;
         p->buffer = buffer;
         p->buffer_size = strlen(buffer);
-        p->punctuation = punctuation;
+        p->punc_t = punc_t;
         p->tokens.capacity = 255;
         p->tokens.count = 0;
-        p->tokens.items = (Token*)_KMALLOC(sizeof(Token) * p->tokens.capacity);
+        p->tokens.items = (token_t*)_KMALLOC(sizeof(token_t) * p->tokens.capacity);
         
         intmax_t current_line = 0, begin_token = 0, end_token = 0;
-        Token token;
+        token_t token;
         
         // Parse the entire buffer
         for (intmax_t i = 0; i < p->buffer_size; i++) {
@@ -248,9 +248,9 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
             }
 
             // are we starting any punctuations
-            int is_punc = Parser_IsPunctuation(p, i);
+            int is_punc = parser_is_punctuation(p, i);
             if (is_punc == -1) {
-                // gobble up until we hit whitespace or another punctuation
+                // gobble up until we hit whitespace or another punc_t
                 intmax_t start_offset = i;
                 intmax_t end_offset = start_offset + 1;
                 intmax_t start_line = current_line;
@@ -282,12 +282,12 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
                         if (p->buffer[i] == '\r' && i < p->buffer_size) i++; // skip \r
                         if (p->buffer[i] == '\n') current_line++;
 
-                        is_punc = Parser_IsPunctuation(p, i);
+                        is_punc = parser_is_punctuation(p, i);
                         
-                        // delimited by punctuation, reverse so we can track next round
+                        // delimited by punc_t, reverse so we can track next round
                         if (is_punc > -1) {
                             is_punc = -1;
-                            i -= p->punctuation->items[is_punc].len + 1; 
+                            i -= p->punc_t->items[is_punc].len + 1; 
                             break;
                         }
 
@@ -313,15 +313,15 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
             } 
 
             if (is_punc >= 0) {
-                token.id = p->punctuation->items[is_punc].id;
-                token.len = p->punctuation->items[is_punc].len;
+                token.id = p->punc_t->items[is_punc].id;
+                token.len = p->punc_t->items[is_punc].len;
                 token.offset = i;
                 token.line = current_line;
                 token.token = (char*) _KMALLOC(token.len);
-                strcpy(token.token, p->punctuation->items[is_punc].p);
+                strcpy(token.token, p->punc_t->items[is_punc].p);
 
                 if (token.len > 1) {
-                    // increment by the full punctuation size
+                    // increment by the full punc_t size
                     i += token.len; // -1 because we've already got the first character
                 }
             } else {
@@ -331,7 +331,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
             // Add the token (expand array size if necessary)
             if (p->tokens.count >= p->tokens.capacity) {
                 p->tokens.capacity *= 2;
-                p->tokens.items = (Token*) _KREALLOC(p->tokens.items, p->tokens.capacity);
+                p->tokens.items = (token_t*) _KREALLOC(p->tokens.items, p->tokens.capacity);
             }
  
             p->tokens.items[p->tokens.count++] = token;
@@ -343,7 +343,7 @@ Parser *Parser_Init(const char *buffer, const PunctuationList *punctuation, int 
     return nullptr;
 }
 
-void Parser_Destroy(Parser *parser) 
+void parser_destroy(parser_t *parser) 
 {
     _KASSERT(parser);
     
@@ -359,7 +359,7 @@ void Parser_Destroy(Parser *parser)
 }
 
 
-const Token Parser_GetToken(Parser *parser)
+const token_t parser_get_token(parser_t *parser)
 {
     _KASSERT(parser);
 
@@ -367,7 +367,7 @@ const Token Parser_GetToken(Parser *parser)
         return parser->tokens.items[parser->current_token++];
     }
 
-    const Token eof_token = {
+    const token_t eof_token = {
         .id = -2,
         .len = 3,
         .line = parser->tokens.items[parser->current_token-1].line+1,
@@ -378,7 +378,7 @@ const Token Parser_GetToken(Parser *parser)
     return eof_token;
 }
 
-void Parser_UngetToken(Parser *parser)
+void parser_unget_token(parser_t *parser)
 {
     _KASSERT(parser);
     if (parser->current_token > 0) {
@@ -386,7 +386,7 @@ void Parser_UngetToken(Parser *parser)
     }
 }
 
-const Token Parser_PeekToken(Parser *parser)
+const token_t parser_peek_token(parser_t *parser)
 {
     _KASSERT(parser);
 
@@ -394,7 +394,7 @@ const Token Parser_PeekToken(Parser *parser)
         return parser->tokens.items[parser->current_token + 1];
     }
 
-    const Token eof_token = {
+    const token_t eof_token = {
         .id = -2,
         .len = 3,
         .line = parser->tokens.items[parser->current_token-1].line+1,
@@ -405,7 +405,7 @@ const Token Parser_PeekToken(Parser *parser)
     return eof_token;
 }
 
-intmax_t Parser_GetLine(Parser *parser)
+intmax_t parser_get_line(parser_t *parser)
 {
     _KASSERT(parser);
     

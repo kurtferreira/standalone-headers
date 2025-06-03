@@ -21,17 +21,16 @@
 Objectives:
 --------------------------------------------------------------------------------
 
-- we need to define error/stack tracing
-    Lexer_SetTracer(void (*cb)(const char *msg, const char *file, maxint_t line, maxint_t offset));
-- we need to identify file scopes
+
+[-] we need to identify file scopes
     Lexer_DefineScript(const char *identifier);
     Lexer_DefineScope(Lexer_Script *script, const char *scope);
-- we want to define some abritrary grammar that a script(s) should obey
+[-] we want to define some abritrary grammar that a script(s) should obey
     Lexer_ExpectMatch(p_open_brace, p_close_brace, "Found open bracket with no closing bracket");
-- we want to define what crap is (comments) so ignore
+[-] we want to define what crap is (comments) so ignore
     Lexer_DefineIgnore(p_singleline_comment, P_Newline);
     Lexer_DefineIgnore(p_multiline_comment_open, p_multiline_comment_close);
-- we need to define atomics
+[-] we need to define atomics
     Lexer_DefineAtomic(?)
     Lexer_DefineVariable(?)
     Lexer_DefineConstant(?)
@@ -39,7 +38,10 @@ Objectives:
     Lexer_DefineOperation(?)
     Lexer_DefineScopeStart(?)
     Lexer_DefineScopeEnd(?)
-- we need to define compile-time vs runtime stuff (@TODO)
+[-] we need to define compile-time vs runtime stuff (@TODO)
+
+[+] we need to define error/stack tracing
+    Lexer_SetTracer(void (*cb)(const char *msg, const char *file, maxint_t line, maxint_t offset));
 */
 
 #ifndef _KLEXER_H_
@@ -47,6 +49,7 @@ Objectives:
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "kparser.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,14 +59,50 @@ extern "C" {
 #define LEXER_DIGIT             (1<<1) // A number based representation
 #define LEXER_ALPHANUMERIC      (1<<2) // An alphanumerical representation
 
-typedef void (*Tracer)(const char *msg, const char *file, const char *scope, intmax_t line, intmax_t offset);
 typedef struct {
-    Tracer tracer;
-} Lexer;
+    char            *name;
+    token_list_t    *variables;    
+} scope_t;
 
-Lexer   *Lexer_Init(const char *buffer);
-void     Lexer_Destroy(Lexer *lexer);
-void     Lexer_SetTracer(Lexer *lexer, Tracer tracer);
+typedef struct {
+    scope_t         *items;
+    intmax_t         capacity;
+    intmax_t         count;
+} scopt_list_t;
+
+typedef struct {
+    token_t          start_match;
+    token_t          end_match;
+} rule_t;
+
+typedef struct {
+    rule_t          *items;
+    intmax_t         capacity;
+    intmax_t         count;
+} rule_list_t;
+
+typedef struct {
+    char            *filename;
+    scopt_list_t     scopes;
+} script_t;
+
+typedef void (*tracer_t)(const char *msg, const char *file, const char *scope, intmax_t line, intmax_t offset);
+typedef struct {
+    tracer_t         tracer;
+    scope_t          global_scope;
+    parser_t        *parser;
+} lexer_t;
+
+lexer_t *lexer_init(const char *buffer);
+void     lexer_destroy(lexer_t *lexer);
+// Necessary to output any parsing/lexing errors
+void     lexer_set_tracer(lexer_t *lexer, tracer_t tracer);
+void     lexer_declare_rule(token_t start, token_t end, const char *error);
+
+
+// Mainly used internally when parsing
+void     lexer_parse_script(const char *identifier);
+scope_t *lexer_parse_scope(lexer_t *lexer, const char *scope);
 
 #ifdef __cplusplus
 };
@@ -74,22 +113,37 @@ void     Lexer_SetTracer(Lexer *lexer, Tracer tracer);
 
 #ifdef _KLEXER_IMPLEMENTATION
 
-Lexer *Lexer_Init(const char *buffer)
+lexer_t *lexer_init(const char *buffer)
 {
     return nullptr;
 }
 
-void Lexer_Destroy(Lexer *lexer)
+void lexer_destroy(lexer_t *lexer)
 {
     if (lexer) {
         _KFREE(lexer);
     }
 }
 
-void Lexer_SetTracer(Lexer *lexer, Tracer tracer)
+void lexer_set_tracer(lexer_t *lexer, tracer_t tracer)
 {
     _KASSERT(lexer);
     lexer->tracer = tracer;
+}
+
+void lexer_declare_rule(token_t start, token_t end, const char *error)
+{
+    
+}
+
+void lexer_parse_script(const char *identifier)
+{
+
+}
+
+scope_t *lexer_parse_scope(lexer_t *lexer, const char *scope)
+{
+    return nullptr;
 }
 
 #endif // _KLEXER_IMPLEMENTATION

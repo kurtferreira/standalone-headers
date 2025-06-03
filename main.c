@@ -18,7 +18,7 @@ typedef enum {
     P_Divide
 } MyPunctuation;
 
-static Punctuation punctuation[] = {
+static punc_t punctuation[] = {
     "<<", P_ShiftLeft, 0,
     ">>", P_ShiftRight, 0,
     "(", P_OpenBrace, 0,
@@ -36,27 +36,27 @@ static const char *script = "( hello\t a>>b world + dingles)\n"
 
 void TestPunctuation() 
 {
-    PunctuationList *plist = Punctuation_Init();
+    punc_list_t *plist = punc_init();
     //  Define the punctuation list
     for (int i = 0; i < (int)sizeof(punctuation) / sizeof(punctuation[0]); i++) {
-        Punctuation_Add(plist, punctuation[i].p, punctuation[i].id);
+        punc_add(plist, punctuation[i].p, punctuation[i].id);
     }
     for (int i = 0; i < plist->count; i++) {
         printf("Punctuation: \"%s\" (%i)\n", plist->items[i].p, plist->items[i].id);
     }
 
     // Parse a piece of string given the punctuation definition
-    Parser *parser = Parser_Init(script, plist, P_ACCEPT_DOUBLEQUOTES|P_ACCEPT_SINGLEQUOTES);
+    parser_t *parser = parser_init(script, plist, P_ACCEPT_DOUBLEQUOTES|P_ACCEPT_SINGLEQUOTES);
 
-    Token token = Parser_GetToken(parser);
+    token_t token = parser_get_token(parser);
     while (token.id != -2) {
         printf("Token (id:%i): [%s]\n", token.id, token.token);
-        token = Parser_GetToken(parser);
+        token = parser_get_token(parser);
     }
 
 
-    Punctuation_Destroy(plist);
-    Parser_Destroy(parser);
+    punc_destroy(plist);
+    parser_destroy(parser);
 }
 
 int main(int argc, char* argv[]) 
