@@ -105,7 +105,7 @@ typedef struct {
 typedef struct {
     int                  options;
     const char          *buffer;
-    const punc_list_t   *punc_t;
+    const punc_list_t   *punctuation;
     intmax_t             buffer_size;
     token_list_t         tokens;
     intmax_t             current_token;
@@ -128,7 +128,7 @@ void                punc_destroy(punc_list_t *list);
 //
 // Parsing 
 //
-parser_t           *parser_init(const char *buffer, const punc_list_t *punc_t, int options);
+parser_t           *parser_init(const char *buffer, const punc_list_t *punctuation, int options);
 void                parser_destroy(parser_t *parser);
 
 
@@ -152,13 +152,13 @@ int parser_is_punctuation(parser_t *parser, intmax_t start_offset)
     int found_punc = 0;
     int p_index = 0;
 
-    for (int k = 0; k < parser->punc_t->count; k++) {
+    for (int k = 0; k < parser->punctuation->count; k++) {
         // first char match
-        if (parser->buffer[offset] == parser->punc_t->items[k].p[p_index]) {
+        if (parser->buffer[offset] == parser->punctuation->items[k].p[p_index]) {
             found_punc = 1;
             // match remaining chars
-            while (++offset < parser->buffer_size && ++p_index < parser->punc_t->items[k].len) {
-                if (parser->buffer[offset] != parser->punc_t->items[k].p[p_index]) {
+            while (++offset < parser->buffer_size && ++p_index < parser->punctuation->items[k].len) {
+                if (parser->buffer[offset] != parser->punctuation->items[k].p[p_index]) {
                     found_punc = 0;
                     offset = start_offset; // reverse
                     p_index = 0;
@@ -216,16 +216,16 @@ void punc_destroy(punc_list_t *list)
     }
 }
 
-parser_t *parser_init(const char *buffer, const punc_list_t *punc_t, int options) 
+parser_t *parser_init(const char *buffer, const punc_list_t *punctuation, int options) 
 {
-    _KASSERT(punc_t);
+    _KASSERT(punctuation);
 
     parser_t *p = (parser_t*) _KMALLOC(sizeof(parser_t));
     if (p) {
         p->options = options;
         p->buffer = buffer;
         p->buffer_size = strlen(buffer);
-        p->punc_t = punc_t;
+        p->punctuation = punctuation;
         p->tokens.capacity = 255;
         p->tokens.count = 0;
         p->tokens.items = (token_t*)_KMALLOC(sizeof(token_t) * p->tokens.capacity);
@@ -287,7 +287,7 @@ parser_t *parser_init(const char *buffer, const punc_list_t *punc_t, int options
                         // delimited by punc_t, reverse so we can track next round
                         if (is_punc > -1) {
                             is_punc = -1;
-                            i -= p->punc_t->items[is_punc].len + 1; 
+                            i -= p->punctuation->items[is_punc].len + 1; 
                             break;
                         }
 
@@ -313,12 +313,12 @@ parser_t *parser_init(const char *buffer, const punc_list_t *punc_t, int options
             } 
 
             if (is_punc >= 0) {
-                token.id = p->punc_t->items[is_punc].id;
-                token.len = p->punc_t->items[is_punc].len;
+                token.id = p->punctuation->items[is_punc].id;
+                token.len = p->punctuation->items[is_punc].len;
                 token.offset = i;
                 token.line = current_line;
                 token.token = (char*) _KMALLOC(token.len);
-                strcpy(token.token, p->punc_t->items[is_punc].p);
+                strcpy(token.token, p->punctuation->items[is_punc].p);
 
                 if (token.len > 1) {
                     // increment by the full punc_t size
