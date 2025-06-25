@@ -3,6 +3,10 @@
 #define _KPARSER_IMPLEMENTATION
 #include "kparser.h"
 
+#define USE_KALLOC
+#define KALLOC_IMPLEMENTATION
+#include "kalloc.h"
+
 // Make sure to include multibyte punctuation before single-byte ones
 // e.g. '<<' before '<'
 typedef enum {
@@ -59,8 +63,18 @@ void TestPunctuation()
     parser_destroy(parser);
 }
 
+void TestMemory()
+{
+    void *p = __alloc(1024);
+
+    if ( __leaks() ) {
+        __print_leaks();
+    }
+}
+
 int main(int argc, char* argv[]) 
 {
-    TestPunctuation();
+    // TestPunctuation();
+    TestMemory();
     return 0;
 }
