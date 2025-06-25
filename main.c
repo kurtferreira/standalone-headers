@@ -67,6 +67,9 @@ void TestMemory()
 {
     void *p = __alloc(1024);
 
+    // uncomment to remove leaking mem
+    // __free(p);
+
     if ( __leaks() ) {
         __print_leaks();
     }

@@ -1,3 +1,9 @@
 build
 .vscode
 .xmake
+cmake*
+main.*
+!main.c
+main
+*.iml
+.idea

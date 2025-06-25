@@ -36,12 +36,12 @@ void*   kmem_alloc(size_t bytes, const char *file, const char *func, size_t line
 void*   kmem_calloc(size_t num_items, size_t bytes, const char *file, const char *func, size_t line);
 bool    kmem_leaks();
 void    kmem_print_leaks();
-void    kmem_free(void *ptr, const char *file, size_t line);
+void    kmem_free(void *ptr);
 
 #ifdef USE_KALLOC
     #define __alloc(x)      kmem_alloc(x, __FILE__, __func__, __LINE__)
     #define __calloc(x,y)   kmem_calloc(x, y, __FILE__, __func__, __LINE__)
-    #define __free(x)       kmem_free(x, __FILE__, __func__, __LINE__)
+    #define __free(x)       kmem_free(x)
     #define __leaks()       kmem_leaks()
     #define __print_leaks() kmem_print_leaks()
 #else
@@ -146,7 +146,7 @@ inline void *kmem_calloc(size_t num_items, size_t size, const char *file, const 
     return nullptr;
 }
 
-inline void kmem_free(void *ptr, const char *file, size_t line)
+inline void kmem_free(void *ptr)
 {
     if ( ptr ) {
         for ( size_t i = 0; i < kmem_allocation_state.count; i++ ) {
